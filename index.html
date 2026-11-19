@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Controle de Empréstimos</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#131b2e;--panel2:#19243a;--line:#293650;--text:#edf2ff;--muted:#9ba9c3;--green:#65d6a3;--red:#ff7d88}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1020,#101a2d);color:var(--text);font:15px system-ui,Arial,sans-serif}
+main{max-width:1100px;margin:auto;padding:32px 20px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:26px}
+h1{font-size:26px;margin:0 0 6px}.sub,.muted{color:var(--muted)}.pill{border:1px solid #315947;color:var(--green);padding:8px 12px;border-radius:30px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.stat,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.stat small{color:var(--muted)}.stat strong{display:block;font-size:24px;margin-top:8px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}.panel h2{font-size:17px;margin:0 0 16px}
+label{display:block;color:var(--muted);font-size:12px;margin:12px 0 6px}input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:#0d1526;color:var(--text);outline:none}input:focus{border-color:#7ba7ff}
+button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer}.primary{background:var(--green);color:#082016;width:100%;margin-top:16px}.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.toolbar{display:flex;gap:10px;margin-bottom:14px}.toolbar input{flex:1}.list{display:grid;gap:10px}
+.loan{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:12px}
+.loan h3{font-size:15px;margin:0 0 5px}.meta{font-size:12px;color:var(--muted);line-height:1.7}.amount{text-align:right;font-weight:700}.balance{font-size:12px;color:var(--green);margin-top:4px}
+.actions{display:flex;gap:7px;justify-content:flex-end;grid-column:1/-1}.actions button{font-size:12px;padding:8px 10px}.paid{color:var(--green)}.late{color:var(--red)}.empty{text-align:center;color:var(--muted);padding:32px 10px}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:18px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.loan{grid-template-columns:1fr}.amount{text-align:left}.actions{justify-content:flex-start}}
+</style></head><body><main>
+<header class="top"><div><h1>Controle de Empréstimos</h1><p class="sub">Acompanhe valores, vencimentos e pagamentos em um só lugar.</p></div><span class="pill">● PAINEL PRIVADO</span></header>
+<section class="stats"><div class="stat"><small>Total emprestado</small><strong id="total">R$ 0,00</strong></div><div class="stat"><small>Em aberto</small><strong id="open">R$ 0,00</strong></div><div class="stat"><small>Valores recebidos</small><strong id="received">R$ 0,00</strong></div></section>
+<div class="layout"><section class="panel"><h2>Novo empréstimo</h2><form id="loanForm">
+<label for="person">Nome da pessoa</label><input id="person" maxlength="70" required placeholder="Nome do cliente">
+<label for="principal">Valor emprestado (R$)</label><input id="principal" type="number" min="0.01" step="0.01" required placeholder="Ex.: 500,00">
+<label for="totalDue">Valor total acordado para devolução (R$)</label><input id="totalDue" type="number" min="0.01" step="0.01" required placeholder="Ex.: 500,00">
+<label for="date">Data do empréstimo</label><input id="date" type="date" required>
+<label for="due">Data de vencimento</label><input id="due" type="date" required>
+<button class="primary" type="submit">＋ Cadastrar empréstimo</button></form>
+<p class="note">Registre apenas condições permitidas pela legislação e formalize o acordo com clareza. Este painel é um controle particular e não substitui contrato ou orientação jurídica.</p></section>
+<section class="panel"><h2>Empréstimos cadastrados</h2><div class="toolbar"><input id="search" placeholder="Buscar por nome..."><button class="secondary" id="export">Exportar CSV</button></div><div class="list" id="list"></div></section></div></main>
+<script>
+const $=id=>document.getElementById(id), money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}), today=()=>new Date().toISOString().slice(0,10);
+let loans=JSON.parse(localStorage.getItem('loan_control_v1')||'[]');$('date').value=today();
+function save(){localStorage.setItem('loan_control_v1',JSON.stringify(loans));render()}
+function render(){
+ const total=loans.reduce((s,l)=>s+Number(l.principal),0),open=loans.reduce((s,l)=>s+Math.max(0,Number(l.totalDue)-Number(l.paid||0)),0),received=loans.reduce((s,l)=>s+Number(l.paid||0),0);
+ $('total').textContent=money(total);$('open').textContent=money(open);$('received').textContent=money(received);const q=$('search').value.toLocaleLowerCase('pt-BR'),shown=loans.filter(l=>l.person.toLocaleLowerCase('pt-BR').includes(q));$('list').innerHTML='';
+ if(!shown.length){$('list').innerHTML='<div class="empty">Nenhum empréstimo cadastrado.</div>';return}
+ shown.forEach(l=>{const balance=Math.max(0,Number(l.totalDue)-Number(l.paid||0)),isPaid=balance<=0,isLate=!isPaid&&l.due<today(),el=document.createElement('article');el.className='loan';
+ const info=document.createElement('div'),h=document.createElement('h3');h.textContent=l.person;const meta=document.createElement('div');meta.className='meta';meta.textContent='Emprestado: '+money(l.principal)+' · Acordado: '+money(l.totalDue)+' · Vencimento: '+l.due.split('-').reverse().join('/');
+ const status=document.createElement('div');status.className='meta '+(isPaid?'paid':isLate?'late':'');status.textContent=isPaid?'Quitado':isLate?'Vencido':'Em aberto';info.append(h,meta,status);
+ const amt=document.createElement('div');amt.className='amount';amt.textContent=money(l.totalDue);const bal=document.createElement('div');bal.className='balance';bal.textContent='Saldo: '+money(balance);amt.append(bal);
+ const actions=document.createElement('div');actions.className='actions';const pay=document.createElement('button');pay.className='secondary';pay.textContent='Registrar pagamento';pay.disabled=isPaid;pay.onclick=()=>payment(l.id);const del=document.createElement('button');del.className='secondary';del.textContent='Excluir';del.onclick=()=>removeLoan(l.id);actions.append(pay,del);el.append(info,amt,actions);$('list').append(el)});
+}
+function payment(id){const l=loans.find(x=>x.id===id);if(!l)return;const balance=Math.max(0,Number(l.totalDue)-Number(l.paid||0)),raw=prompt('Saldo atual: '+money(balance)+'\nQuanto foi recebido agora?');if(raw===null)return;const value=Number(raw.replace(',','.'));if(!Number.isFinite(value)||value<=0){alert('Informe um valor válido.');return}l.paid=Math.min(Number(l.totalDue),Number(l.paid||0)+value);save()}
+function removeLoan(id){if(confirm('Excluir este registro? Essa ação não pode ser desfeita.')){loans=loans.filter(l=>l.id!==id);save()}}
+$('loanForm').addEventListener('submit',e=>{e.preventDefault();const principal=Number($('principal').value),totalDue=Number($('totalDue').value),date=$('date').value,due=$('due').value;if(totalDue<principal){alert('O valor total acordado não pode ser menor que o valor emprestado.');return}if(due<date){alert('O vencimento não pode ser anterior à data do empréstimo.');return}loans.unshift({id:crypto.randomUUID(),person:$('person').value.trim(),principal,totalDue,date,due,paid:0});save();e.target.reset();$('date').value=today()});
+$('search').addEventListener('input',render);$('export').onclick=()=>{const rows=[['Nome','Valor emprestado','Total acordado','Pago','Saldo','Data','Vencimento'],...loans.map(l=>[l.person,l.principal,l.totalDue,l.paid||0,Math.max(0,l.totalDue-(l.paid||0)),l.date,l.due])],csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(';')).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='controle-emprestimos.csv';a.click();URL.revokeObjectURL(a.href)};render();
+</script></body></html>
