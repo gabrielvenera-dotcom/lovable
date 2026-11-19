@@ -1,52 +1,77 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Controle de Empréstimos</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maximus • Gestão de Empréstimos</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{color-scheme:dark;--bg:#0b1020;--panel:#131b2e;--panel2:#19243a;--line:#293650;--text:#edf2ff;--muted:#9ba9c3;--green:#65d6a3;--red:#ff7d88}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1020,#101a2d);color:var(--text);font:15px system-ui,Arial,sans-serif}
-main{max-width:1100px;margin:auto;padding:32px 20px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:26px}
-h1{font-size:26px;margin:0 0 6px}.sub,.muted{color:var(--muted)}.pill{border:1px solid #315947;color:var(--green);padding:8px 12px;border-radius:30px;font-size:12px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.stat,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
-.stat small{color:var(--muted)}.stat strong{display:block;font-size:24px;margin-top:8px}
-.layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}.panel h2{font-size:17px;margin:0 0 16px}
-label{display:block;color:var(--muted);font-size:12px;margin:12px 0 6px}input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:#0d1526;color:var(--text);outline:none}input:focus{border-color:#7ba7ff}
-button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer}.primary{background:var(--green);color:#082016;width:100%;margin-top:16px}.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
-.toolbar{display:flex;gap:10px;margin-bottom:14px}.toolbar input{flex:1}.list{display:grid;gap:10px}
-.loan{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:12px}
-.loan h3{font-size:15px;margin:0 0 5px}.meta{font-size:12px;color:var(--muted);line-height:1.7}.amount{text-align:right;font-weight:700}.balance{font-size:12px;color:var(--green);margin-top:4px}
-.actions{display:flex;gap:7px;justify-content:flex-end;grid-column:1/-1}.actions button{font-size:12px;padding:8px 10px}.paid{color:var(--green)}.late{color:var(--red)}.empty{text-align:center;color:var(--muted);padding:32px 10px}
-.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:18px}
-@media(max-width:760px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.loan{grid-template-columns:1fr}.amount{text-align:left}.actions{justify-content:flex-start}}
-</style></head><body><main>
-<header class="top"><div><h1>Controle de Empréstimos</h1><p class="sub">Acompanhe valores, vencimentos e pagamentos em um só lugar.</p></div><span class="pill">● PAINEL PRIVADO</span></header>
-<section class="stats"><div class="stat"><small>Total emprestado</small><strong id="total">R$ 0,00</strong></div><div class="stat"><small>Em aberto</small><strong id="open">R$ 0,00</strong></div><div class="stat"><small>Valores recebidos</small><strong id="received">R$ 0,00</strong></div></section>
-<div class="layout"><section class="panel"><h2>Novo empréstimo</h2><form id="loanForm">
-<label for="person">Nome da pessoa</label><input id="person" maxlength="70" required placeholder="Nome do cliente">
-<label for="principal">Valor emprestado (R$)</label><input id="principal" type="number" min="0.01" step="0.01" required placeholder="Ex.: 500,00">
-<label for="totalDue">Valor total acordado para devolução (R$)</label><input id="totalDue" type="number" min="0.01" step="0.01" required placeholder="Ex.: 500,00">
-<label for="date">Data do empréstimo</label><input id="date" type="date" required>
-<label for="due">Data de vencimento</label><input id="due" type="date" required>
-<button class="primary" type="submit">＋ Cadastrar empréstimo</button></form>
-<p class="note">Registre apenas condições permitidas pela legislação e formalize o acordo com clareza. Este painel é um controle particular e não substitui contrato ou orientação jurídica.</p></section>
-<section class="panel"><h2>Empréstimos cadastrados</h2><div class="toolbar"><input id="search" placeholder="Buscar por nome..."><button class="secondary" id="export">Exportar CSV</button></div><div class="list" id="list"></div></section></div></main>
+:root{color-scheme:dark;--bg:#0a0f1b;--panel:#121b2b;--panel2:#182438;--line:#29384f;--text:#eef3fc;--muted:#9baac0;--green:#63d6a1;--red:#ff7d88;--blue:#8db7ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#14243b 0,transparent 35%),var(--bg);color:var(--text);font:15px system-ui,Arial}main{max-width:1200px;margin:auto;padding:28px 18px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:24px}h1{font-size:25px;margin:0}h2{font-size:17px;margin:0 0 16px}.muted,small{color:var(--muted)}.tag{color:var(--green);border:1px solid #315c4b;border-radius:30px;padding:7px 11px;font-size:12px}.panel,.stat{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:18px}.login{max-width:420px;margin:8vh auto}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.stat strong{display:block;font-size:23px;margin-top:8px}.layout{display:grid;grid-template-columns:1fr;gap:15px}label{display:block;color:var(--muted);font-size:12px;margin:12px 0 6px}input,select,textarea{width:100%;background:#0b1423;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit}button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:var(--green);color:#092017;width:100%;margin-top:16px}.secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text)}.danger{color:var(--red)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:13px}.toolbar input{flex:1;min-width:190px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}.status{display:inline-block;border-radius:30px;padding:5px 9px;background:#24344c;font-size:11px}.status.active,.status.approved{color:var(--green)}.status.defaulted,.status.lost,.status.rejected{color:var(--red)}.hidden{display:none!important}.notice{padding:12px;border:1px solid #705d32;background:#302817;border-radius:10px;color:#f4d99b;font-size:13px;line-height:1.5}.error{color:var(--red);font-size:13px;margin-top:10px}.empty{text-align:center;padding:28px;color:var(--muted)}.actions{display:flex;gap:7px;flex-wrap:wrap}.actions button{font-size:12px;padding:7px 9px}.modal{position:fixed;inset:0;background:#000b;display:grid;place-items:center;padding:18px}.modal .panel{width:min(520px,100%);max-height:90vh;overflow:auto}@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.top{align-items:flex-start;flex-direction:column}}@media(max-width:430px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body><main>
+<header class="top"><div><h1>MAXIMUS <span style="font-weight:400">/ Gestão de Empréstimos</span></h1><div class="muted">Painel administrativo • acesso restrito</div></div><div id="sessionTag" class="tag">● CONEXÃO SUPABASE</div></header>
+<section id="login" class="panel login"><h2>Entrar no painel</h2><p class="muted">Use a conta administrativa cadastrada no Supabase.</p><form id="loginForm"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" id="loginBtn">Entrar</button><div id="loginError" class="error"></div></form></section>
+<section id="dashboard" class="hidden">
+<div class="toolbar"><input id="search" placeholder="Buscar por nome ou ID do pedido"><select id="filter"><option value="">Todos os status</option><option value="pending">Novos pedidos</option><option value="under_review">Em análise</option><option value="approved">Aprovados</option><option value="active">Em andamento</option><option value="paid">Quitados</option><option value="defaulted">Vencidos</option><option value="lost">Perdidos</option><option value="rejected">Recusados</option></select><button class="secondary" id="refresh">Atualizar</button><button class="secondary" id="logout">Sair</button></div>
+<div class="grid"><div class="stat"><small>Pedidos</small><strong id="count">0</strong></div><div class="stat"><small>Em análise / novos</small><strong id="pending">0</strong></div><div class="stat"><small>Em andamento</small><strong id="active">0</strong></div><div class="stat"><small>Vencidos</small><strong id="late">0</strong></div></div>
+<section class="panel"><h2>Solicitações e contratos</h2><div class="tablewrap"><table><thead><tr><th>Cliente</th><th>Solicitado</th><th>Acordado</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="empty hidden">Nenhuma solicitação encontrada.</div></section>
+<p class="muted" style="font-size:12px;line-height:1.6">Documentos e vídeos devem permanecer no bucket privado. Este painel ainda não exibe arquivos nem realiza cobrança automática. Registre apenas informações necessárias e use os dados conforme a LGPD.</p>
+</section>
+</main>
+<div id="modal" class="modal hidden"><section class="panel"><div class="top"><h2 id="modalTitle">Detalhes do pedido</h2><button class="secondary" id="closeModal">Fechar</button></div><div id="modalBody"></div></section></div>
 <script>
-const $=id=>document.getElementById(id), money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}), today=()=>new Date().toISOString().slice(0,10);
-let loans=JSON.parse(localStorage.getItem('loan_control_v1')||'[]');$('date').value=today();
-function save(){localStorage.setItem('loan_control_v1',JSON.stringify(loans));render()}
-function render(){
- const total=loans.reduce((s,l)=>s+Number(l.principal),0),open=loans.reduce((s,l)=>s+Math.max(0,Number(l.totalDue)-Number(l.paid||0)),0),received=loans.reduce((s,l)=>s+Number(l.paid||0),0);
- $('total').textContent=money(total);$('open').textContent=money(open);$('received').textContent=money(received);const q=$('search').value.toLocaleLowerCase('pt-BR'),shown=loans.filter(l=>l.person.toLocaleLowerCase('pt-BR').includes(q));$('list').innerHTML='';
- if(!shown.length){$('list').innerHTML='<div class="empty">Nenhum empréstimo cadastrado.</div>';return}
- shown.forEach(l=>{const balance=Math.max(0,Number(l.totalDue)-Number(l.paid||0)),isPaid=balance<=0,isLate=!isPaid&&l.due<today(),el=document.createElement('article');el.className='loan';
- const info=document.createElement('div'),h=document.createElement('h3');h.textContent=l.person;const meta=document.createElement('div');meta.className='meta';meta.textContent='Emprestado: '+money(l.principal)+' · Acordado: '+money(l.totalDue)+' · Vencimento: '+l.due.split('-').reverse().join('/');
- const status=document.createElement('div');status.className='meta '+(isPaid?'paid':isLate?'late':'');status.textContent=isPaid?'Quitado':isLate?'Vencido':'Em aberto';info.append(h,meta,status);
- const amt=document.createElement('div');amt.className='amount';amt.textContent=money(l.totalDue);const bal=document.createElement('div');bal.className='balance';bal.textContent='Saldo: '+money(balance);amt.append(bal);
- const actions=document.createElement('div');actions.className='actions';const pay=document.createElement('button');pay.className='secondary';pay.textContent='Registrar pagamento';pay.disabled=isPaid;pay.onclick=()=>payment(l.id);const del=document.createElement('button');del.className='secondary';del.textContent='Excluir';del.onclick=()=>removeLoan(l.id);actions.append(pay,del);el.append(info,amt,actions);$('list').append(el)});
+const SUPABASE_URL='https://zusnocftzephjdrzcedp.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_01bobDyjB3uyWknSO0Ewdw_zxpuwF6n';
+const client=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const $=id=>document.getElementById(id), money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}), today=new Date().toISOString().slice(0,10);
+let applications=[];
+const labels={pending:'Novo pedido',under_review:'Em análise',approved:'Aprovado',rejected:'Recusado',needs_info:'Aguardando dados',active:'Em andamento',paid:'Quitado',defaulted:'Vencido',lost:'Perdido'};
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showError(e){return e?.message||'Ocorreu um erro. Tente novamente.'}
+async function load(){
+ $('rows').innerHTML='<tr><td colspan="6">Carregando...</td></tr>';
+ const {data,error}=await client.from('loan_applications').select('id,user_id,amount_requested,approved_amount,agreed_amount,due_date,status,created_at,admin_notes').order('created_at',{ascending:false});
+ if(error)throw error;
+ applications=data||[];
+ const ids=[...new Set(applications.map(x=>x.user_id))];
+ let names={};
+ if(ids.length){const p=await client.from('client_data').select('user_id,full_name').in('user_id',ids);if(!p.error)(p.data||[]).forEach(x=>names[x.user_id]=x.full_name)}
+ applications.forEach(x=>x.clientName=names[x.user_id]||'Cliente');
+ render();
 }
-function payment(id){const l=loans.find(x=>x.id===id);if(!l)return;const balance=Math.max(0,Number(l.totalDue)-Number(l.paid||0)),raw=prompt('Saldo atual: '+money(balance)+'\nQuanto foi recebido agora?');if(raw===null)return;const value=Number(raw.replace(',','.'));if(!Number.isFinite(value)||value<=0){alert('Informe um valor válido.');return}l.paid=Math.min(Number(l.totalDue),Number(l.paid||0)+value);save()}
-function removeLoan(id){if(confirm('Excluir este registro? Essa ação não pode ser desfeita.')){loans=loans.filter(l=>l.id!==id);save()}}
-$('loanForm').addEventListener('submit',e=>{e.preventDefault();const principal=Number($('principal').value),totalDue=Number($('totalDue').value),date=$('date').value,due=$('due').value;if(totalDue<principal){alert('O valor total acordado não pode ser menor que o valor emprestado.');return}if(due<date){alert('O vencimento não pode ser anterior à data do empréstimo.');return}loans.unshift({id:crypto.randomUUID(),person:$('person').value.trim(),principal,totalDue,date,due,paid:0});save();e.target.reset();$('date').value=today()});
-$('search').addEventListener('input',render);$('export').onclick=()=>{const rows=[['Nome','Valor emprestado','Total acordado','Pago','Saldo','Data','Vencimento'],...loans.map(l=>[l.person,l.principal,l.totalDue,l.paid||0,Math.max(0,l.totalDue-(l.paid||0)),l.date,l.due])],csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(';')).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='controle-emprestimos.csv';a.click();URL.revokeObjectURL(a.href)};render();
+function render(){
+ const q=$('search').value.trim().toLocaleLowerCase('pt-BR'),f=$('filter').value;
+ const shown=applications.filter(x=>(!f||x.status===f)&&((x.clientName+' '+x.id).toLocaleLowerCase('pt-BR').includes(q)));
+ $('count').textContent=applications.length;
+ $('pending').textContent=applications.filter(x=>['pending','under_review','needs_info'].includes(x.status)).length;
+ $('active').textContent=applications.filter(x=>['approved','active'].includes(x.status)).length;
+ $('late').textContent=applications.filter(x=>['active','approved'].includes(x.status)&&x.due_date&&x.due_date<today).length;
+ $('rows').innerHTML=shown.map(x=>'<tr><td>'+esc(x.clientName)+'</td><td>'+money(x.amount_requested)+'</td><td>'+money(x.agreed_amount||x.approved_amount)+'</td><td>'+(x.due_date?new Date(x.due_date+'T12:00:00').toLocaleDateString('pt-BR'):'—')+'</td><td><span class="status '+esc(x.status)+'">'+esc(labels[x.status]||x.status)+'</span></td><td><div class="actions"><button class="secondary" data-open="'+x.id+'">Abrir / gerenciar</button></div></td></tr>').join('');
+ $('empty').classList.toggle('hidden',shown.length!==0);
+ document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>openApplication(b.dataset.open)));
+}
+async function openApplication(id){
+ const x=applications.find(a=>a.id===id);if(!x)return;
+ $('modalTitle').textContent='Gerenciar solicitação';
+ $('modalBody').innerHTML='<div class="muted">Cliente: '+esc(x.clientName)+'<br>ID: '+esc(x.id)+'<br>Valor solicitado: '+money(x.amount_requested)+'</div><label>Status</label><select id="editStatus">'+Object.entries(labels).map(([v,l])=>'<option value="'+v+'" '+(x.status===v?'selected':'')+'>'+l+'</option>').join('')+'</select><label>Valor aprovado (R$)</label><input id="editApproved" type="number" min="0" step=".01" value="'+(x.approved_amount??'')+'"><label>Valor total acordado (R$)</label><input id="editAgreed" type="number" min="0" step=".01" value="'+(x.agreed_amount??'')+'"><label>Data de vencimento</label><input id="editDue" type="date" value="'+(x.due_date||'')+'"><label>Observações administrativas</label><textarea id="editNotes" rows="3">'+esc(x.admin_notes||'')+'</textarea><button class="primary" id="saveApplication">Salvar alterações</button><hr style="border-color:var(--line);margin:18px 0"><h2>Registrar pagamento</h2><label>Valor recebido (R$)</label><input id="paymentAmount" type="number" min=".01" step=".01" placeholder="0,00"><label>Data do pagamento</label><input id="paymentDate" type="date" value="'+today+'"><label>Forma de pagamento</label><select id="paymentMethod"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="outro">Outro</option></select><button class="secondary" id="addPayment">Registrar pagamento</button><div id="modalError" class="error"></div>';
+ $('modal').classList.remove('hidden');
+ $('saveApplication').onclick=async()=>{const b=$('saveApplication');b.disabled=true;try{const patch={status:$('editStatus').value,approved_amount:$('editApproved').value?Number($('editApproved').value):null,agreed_amount:$('editAgreed').value?Number($('editAgreed').value):null,due_date:$('editDue').value||null,admin_notes:$('editNotes').value};const {error}=await client.from('loan_applications').update(patch).eq('id',id);if(error)throw error;await client.from('loan_history').insert({application_id:id,action:'admin_update',details:'Status e dados do pedido atualizados.'});await load();$('modal').classList.add('hidden')}catch(e){$('modalError').textContent=showError(e)}finally{b.disabled=false}};
+ $('addPayment').onclick=async()=>{const b=$('addPayment');b.disabled=true;try{const amount=Number($('paymentAmount').value);if(!amount||amount<=0)throw new Error('Informe um valor válido.');const {data:{user}}=await client.auth.getUser();const {error}=await client.from('loan_payments').insert({application_id:id,amount,payment_date:$('paymentDate').value,payment_method:$('paymentMethod').value,registered_by:user.id});if(error)throw error;await client.from('loan_history').insert({application_id:id,action:'payment_registered',details:'Pagamento de '+money(amount)+' registrado.'});$('modalError').textContent='Pagamento registrado.';$('paymentAmount').value='';}catch(e){$('modalError').textContent=showError(e)}finally{b.disabled=false}};
+}
+async function verifySession(){
+ const {data:{session}}=await client.auth.getSession();
+ if(!session){$('login').classList.remove('hidden');$('dashboard').classList.add('hidden');$('sessionTag').textContent='● DESLOGADO';return}
+ const {data:profile,error}=await client.from('profiles').select('role,full_name').eq('id',session.user.id).single();
+ if(error||profile?.role!=='admin'){await client.auth.signOut();$('login').classList.remove('hidden');$('dashboard').classList.add('hidden');$('loginError').textContent='Esta conta não tem permissão de administrador.';return}
+ $('login').classList.add('hidden');$('dashboard').classList.remove('hidden');$('sessionTag').textContent='● ADMINISTRADOR';
+ try{await load()}catch(e){$('rows').innerHTML='<tr><td colspan="6" class="danger">'+esc(showError(e))+'</td></tr>'}
+}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('loginBtn').disabled=true;$('loginError').textContent='';try{const {error}=await client.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(error)throw error;await verifySession()}catch(e){$('loginError').textContent=showError(e)}finally{$('loginBtn').disabled=false}});
+$('logout').onclick=async()=>{await client.auth.signOut();await verifySession()};
+$('refresh').onclick=async()=>{try{await load()}catch(e){alert(showError(e))}};
+$('search').addEventListener('input',render);$('filter').addEventListener('change',render);
+$('closeModal').onclick=()=>$('modal').classList.add('hidden');
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').classList.add('hidden')});
+client.auth.onAuthStateChange(()=>setTimeout(verifySession,0));
+verifySession();
 </script></body></html>
